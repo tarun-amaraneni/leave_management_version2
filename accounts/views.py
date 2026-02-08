@@ -41,19 +41,39 @@ TOTAL_ENTITLEMENT = int(os.environ.get("TOTAL_ENTITLEMENT", 12))
 
 
 
+from datetime import timedelta
+from .models import Holiday
+
 def calculate_leave_days(start_date, end_date):
-    """Count leave days excluding Sundays"""
+    """
+    Count leave days excluding:
+    - Holidays where holiday_indicator = 'Y'
+    """
+
+    holiday_dates = set(
+        Holiday.objects.filter(
+            holiday_indicator='Y',
+            holiday_date__range=(start_date, end_date)
+        ).values_list('holiday_date', flat=True)
+    )
+
     days = 0
     current = start_date
+
     while current <= end_date:
-        if current.weekday() != 6:  # Sunday = 6
+        if current not in holiday_dates:
             days += 1
         current += timedelta(days=1)
+
     return days
+
 
 @never_cache
 @login_required
 def employee_dashboard(request):
+    holidays = Holiday.objects.filter(holiday_indicator='Y').values_list('holiday_date', flat=True)
+    holiday_dates = [h.isoformat() for h in holidays]  # convert to 'YYYY-MM-DD' strings
+
     user = request.user
 
     # --- ENTITLEMENTS LOGIC (reuse your existing function) ---
@@ -83,7 +103,8 @@ def employee_dashboard(request):
 
     # Pass entitlements to dashboard template
     return render(request, 'employee/dashboard.html', {
-        'entitlements': entitlements
+        'entitlements': entitlements,
+         "holiday_dates": holiday_dates,
     })
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
@@ -95,14 +116,30 @@ from .models import LeaveRequest
 TOTAL_ENTITLEMENT = settings.TOTAL_ENTITLEMENT
 
 
+from datetime import timedelta
+from .models import Holiday
+
 def calculate_leave_days(start_date, end_date):
-    """Count leave days excluding Sundays"""
+    """
+    Count leave days excluding:
+    - Holidays where holiday_indicator = 'Y'
+    """
+
+    holiday_dates = set(
+        Holiday.objects.filter(
+            holiday_indicator='Y',
+            holiday_date__range=(start_date, end_date)
+        ).values_list('holiday_date', flat=True)
+    )
+
     days = 0
     current = start_date
+
     while current <= end_date:
-        if current.weekday() != 6:  # Sunday = 6
+        if current not in holiday_dates:
             days += 1
         current += timedelta(days=1)
+
     return days
 
 @never_cache
@@ -153,16 +190,34 @@ TOTAL_ENTITLEMENT = settings.TOTAL_ENTITLEMENT
 
 
 
+from datetime import timedelta
+from .models import Holiday
+
+from datetime import timedelta
+from .models import Holiday
+
 def calculate_leave_days(start_date, end_date):
-    """Count leave days excluding Sundays"""
+    """
+    Count leave days excluding:
+    - Holidays where holiday_indicator = 'Y'
+    """
+
+    holiday_dates = set(
+        Holiday.objects.filter(
+            holiday_indicator='Y',
+            holiday_date__range=(start_date, end_date)
+        ).values_list('holiday_date', flat=True)
+    )
+
     days = 0
     current = start_date
+
     while current <= end_date:
-        if current.weekday() != 6:  # Sunday = 6
+        if current not in holiday_dates:
             days += 1
         current += timedelta(days=1)
-    return days
 
+    return days
 
 @never_cache
 @login_required
@@ -345,16 +400,31 @@ TOTAL_ENTITLEMENT = settings.TOTAL_ENTITLEMENT
 
 
 
+from datetime import timedelta
+from .models import Holiday
+
 def calculate_leave_days(start_date, end_date):
-    """Count leave days excluding Sundays"""
+    """
+    Count leave days excluding:
+    - Holidays where holiday_indicator = 'Y'
+    """
+
+    holiday_dates = set(
+        Holiday.objects.filter(
+            holiday_indicator='Y',
+            holiday_date__range=(start_date, end_date)
+        ).values_list('holiday_date', flat=True)
+    )
+
     days = 0
     current = start_date
+
     while current <= end_date:
-        if current.weekday() != 6:  # Sunday = 6
+        if current not in holiday_dates:
             days += 1
         current += timedelta(days=1)
-    return days
 
+    return days
 
 @never_cache
 @login_required
@@ -689,3 +759,31 @@ def leave_action_with_comment(request):
     leave.save()
 
     return redirect("manager_leave_list")  # adjust URL name if needed
+
+
+
+
+from django.shortcuts import get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.views.decorators.http import require_POST
+from .models import LeaveRequest
+
+@login_required
+@require_POST
+def cancel_leave(request, leave_id):
+    leave = get_object_or_404(
+        LeaveRequest,
+        id=leave_id,
+        employee=request.user
+    )
+
+    if leave.status not in ['PENDING', 'APPROVED']:
+        messages.error(request, "This leave cannot be canceled.")
+        return redirect('my_leaves')
+
+    leave.status = 'CANCELED'
+    leave.save()
+
+    messages.success(request, "Leave request canceled successfully.")
+    return redirect('my_leaves')

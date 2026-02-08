@@ -43,6 +43,8 @@ urlpatterns = [
     views.leave_action_with_comment,
     name="leave_action_with_comment"
 ),
+ 
+ path('leave/<int:leave_id>/cancel/', views.cancel_leave, name='cancel_leave'),
 
     
 ]

@@ -32,6 +32,7 @@ class LeaveRequest(models.Model):
         ('PENDING', 'Pending'),
         ('APPROVED', 'Approved'),
         ('REJECTED', 'Rejected'),
+        ('CANCELED', 'Canceled'),
     )
 
     LEAVE_TYPE_CHOICES = (

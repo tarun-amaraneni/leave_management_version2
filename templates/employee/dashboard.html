@@ -166,7 +166,7 @@
             <input type="date" name="end_date" id="end_date" required>
 
             <div class="duration-box">
-                <span class="duration-label">Leave Duration (Excl. Sundays)</span>
+                <span class="duration-label">Leave Duration (Excl. Holidays)</span>
                 <span class="duration-value"><span id="duration">0</span> day(s)</span>
             </div>
 
@@ -225,6 +225,9 @@
 
 </div>
 
+<!-- Pass holidays safely to JS -->
+{{ holiday_dates|json_script:"holiday-data" }}
+
 {% endblock %}
 
 {% block extra_js %}
@@ -233,23 +236,33 @@ const startDateInput = document.getElementById("start_date");
 const endDateInput = document.getElementById("end_date");
 const durationSpan = document.getElementById("duration");
 
+// Parse holidays safely
+const holidayDates = JSON.parse(document.getElementById('holiday-data').textContent);
+
 function calculateDuration() {
     if (!startDateInput.value || !endDateInput.value) {
         durationSpan.textContent = 0;
         return;
     }
+
     const startDate = new Date(startDateInput.value);
     const endDate = new Date(endDateInput.value);
     if (endDate < startDate) {
         durationSpan.textContent = 0;
         return;
     }
+
     let count = 0;
     let current = new Date(startDate);
+
     while (current <= endDate) {
-        if (current.getDay() !== 0) count++;
+        const iso = current.toISOString().split("T")[0]; // format 'YYYY-MM-DD'
+        if (!holidayDates.includes(iso)) {
+            count++;  // count only if not a holiday
+        }
         current.setDate(current.getDate() + 1);
     }
+
     durationSpan.textContent = count;
 }
 
@@ -263,13 +276,14 @@ startDateInput.addEventListener("change", () => {
 });
 
 endDateInput.addEventListener("change", calculateDuration);
-
-// Animate entitlement progress bars
+</script>
+<script>
 document.addEventListener("DOMContentLoaded", function () {
     document.querySelectorAll(".progress").forEach(bar => {
-        const width = bar.dataset.width || 0;
+        const width = bar.getAttribute("data-width");
         bar.style.width = width + "%";
     });
 });
 </script>
+
 {% endblock %}

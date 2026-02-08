@@ -4,7 +4,7 @@
 
 {% block extra_css %}
 <style>
-/* Page title */
+/* Page Title */
 .page-title {
     font-size: 28px;
     font-weight: 700;
@@ -29,13 +29,7 @@
     min-width: 200px;
 }
 
-.table-toolbar input:focus,
-.table-toolbar select:focus {
-    outline: none;
-    border-color: #4CAF50;
-}
-
-/* Table wrapper */
+/* Table Wrapper */
 .table-wrapper {
     background: white;
     border-radius: 14px;
@@ -43,64 +37,65 @@
     overflow: hidden;
 }
 
-/* Table */
 .data-table {
     width: 100%;
     border-collapse: collapse;
-    min-width: 1000px;
+    min-width: 1100px;
 }
 
-/* Sticky header */
 .data-table thead th {
     position: sticky;
     top: 0;
     background: #1f2a38;
     color: #fff;
     padding: 14px 16px;
-    text-align: left;
     font-size: 13px;
-    letter-spacing: 1px;
     cursor: pointer;
-    user-select: none;
 }
 
-.data-table thead th:hover {
-    background: #263445;
-}
-
-/* Rows */
 .data-table td {
     padding: 12px 16px;
     font-size: 14px;
-    color: #444;
     border-bottom: 1px solid #eee;
 }
 
-/* Hover */
 .data-table tbody tr:hover {
     background: #f1f7ff;
 }
 
-/* Status badges */
-.status {
+/* ===== FINAL STATUS BADGES (OVERRIDES base.html) ===== */
+.data-table .status {
     padding: 6px 12px;
     border-radius: 12px;
     font-size: 12px;
     font-weight: 600;
-    color: #fff;
     text-transform: uppercase;
+    color: #fff;
 }
-.status.PENDING { background: #ffc107; color:#000; }
-.status.APPROVED { background: #28a745; }
-.status.REJECTED { background: #dc3545; }
 
-/* Manager comment */
+.data-table .status-pending {
+    background-color: #ffc107;
+    color: #000;
+}
+
+.data-table .status-approved {
+    background-color: #28a745;
+}
+
+.data-table .status-rejected {
+    background-color: #dc3545;
+}
+
+.data-table .status-cancelled {
+    background-color: #fd7e14; /* 🟠 ORANGE */
+}
+
+/* Manager Comment */
 .manager-comment {
     max-width: 220px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    color: #374151;
     font-size: 13px;
 }
 
@@ -109,7 +104,28 @@
     font-style: italic;
 }
 
-/* Empty state */
+/* ===== CANCEL BUTTON (ORANGE) ===== */
+.data-table .leave-cancel-btn {
+    background-color: #fd7e14;
+    color: #fff;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.data-table .leave-cancel-btn:hover {
+    background-color: #e96b0c;
+}
+
+/* Disabled Action */
+.cancel-disabled {
+    color: #9ca3af;
+    font-size: 12px;
+}
+
+/* Empty State */
 .empty {
     padding: 30px;
     text-align: center;
@@ -145,55 +161,71 @@
         <option value="PENDING">Pending</option>
         <option value="APPROVED">Approved</option>
         <option value="REJECTED">Rejected</option>
+        <option value="CANCELLED">Canceled</option>
     </select>
 </div>
 
 {% if leaves %}
 <div class="table-wrapper">
-    <table class="data-table" id="leaveTable">
-        <thead>
-            <tr>
-                <th onclick="sortTable(0)">#</th>
-                <th onclick="sortTable(1)">Leave Type</th>
-                <th onclick="sortTable(2)">Start</th>
-                <th onclick="sortTable(3)">End</th>
-                <th>Reason</th>
-                <th>Manager Comment</th>
-                <th onclick="sortTable(6)">Status</th>
-                <th onclick="sortTable(7)">Submitted</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for leave in leaves %}
-            <tr>
-                <td>{{ forloop.counter }}</td>
-                <td>{{ leave.leave_type }}</td>
-                <td>{{ leave.start_date }}</td>
-                <td>{{ leave.end_date }}</td>
-                <td>{{ leave.reason|truncatechars:40 }}</td>
+<table class="data-table" id="leaveTable">
+    <thead>
+        <tr>
+            <th>#</th>
+            <th onclick="sortTable(1)">Leave Type</th>
+            <th onclick="sortTable(2)">Start</th>
+            <th onclick="sortTable(3)">End</th>
+            <th>Reason</th>
+            <th>Manager Comment</th>
+            <th onclick="sortTable(6)">Status</th>
+            <th onclick="sortTable(7)">Submitted</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for leave in leaves %}
+        <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ leave.leave_type }}</td>
+            <td>{{ leave.start_date }}</td>
+            <td>{{ leave.end_date }}</td>
+            <td>{{ leave.reason|truncatechars:40 }}</td>
 
-                <td>
-                    {% if leave.comment_by_manager %}
-                        <span class="manager-comment"
-                              title="{{ leave.comment_by_manager }}">
-                            {{ leave.comment_by_manager|truncatechars:30 }}
-                        </span>
-                    {% else %}
-                        <span class="manager-comment empty">—</span>
-                    {% endif %}
-                </td>
-
-                <td>
-                    <span class="status {{ leave.status }}">
-                        {{ leave.status }}
+            <td>
+                {% if leave.comment_by_manager %}
+                    <span class="manager-comment" title="{{ leave.comment_by_manager }}">
+                        {{ leave.comment_by_manager|truncatechars:30 }}
                     </span>
-                </td>
+                {% else %}
+                    <span class="manager-comment empty">—</span>
+                {% endif %}
+            </td>
 
-                <td>{{ leave.submitted_at|date:"d M Y H:i" }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+            <td>
+                <span class="status status-{{ leave.status|lower }}">
+                    {% if leave.status == "CANCELLED" %}
+                        Canceled
+                    {% else %}
+                        {{ leave.status }}
+                    {% endif %}
+                </span>
+            </td>
+
+            <td>{{ leave.submitted_at|date:"d M Y H:i" }}</td>
+
+            <td>
+                {% if leave.status == "PENDING" %}
+                <form method="post" action="{% url 'cancel_leave' leave.id %}" onsubmit="return confirmCancel();">
+                    {% csrf_token %}
+                    <button type="submit" class="leave-cancel-btn">Cancel</button>
+                </form>
+                {% else %}
+                    <span class="cancel-disabled">—</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
 </div>
 {% else %}
 <div class="empty">You have not applied for any leaves yet.</div>
@@ -231,7 +263,6 @@ searchInput.addEventListener("keyup", filterTable);
 typeFilter.addEventListener("change", filterTable);
 statusFilter.addEventListener("change", filterTable);
 
-/* Sorting */
 let sortDir = true;
 function sortTable(col) {
     const tbody = table.tBodies[0];
@@ -245,6 +276,10 @@ function sortTable(col) {
 
     sortDir = !sortDir;
     rowsArr.forEach(r => tbody.appendChild(r));
+}
+
+function confirmCancel() {
+    return confirm("Are you sure you want to cancel this leave request?");
 }
 </script>
 {% endblock %}

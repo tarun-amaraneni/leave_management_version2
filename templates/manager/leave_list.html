@@ -172,6 +172,9 @@
 
     <!-- ⬅ Back to Dashboard -->
     <a href="{% url 'manager_dashboard' %}" class="back">← Back to Dashboard</a>
+    
+
+
 
     <!-- 🔍 Search & Filters -->
     <div class="filters">
@@ -192,6 +195,10 @@
         <input type="date" name="to_date" value="{{ request.GET.to_date }}">
         <!-- Clear Filters -->
         <button type="button" class="clear-btn" id="clear-filters">Clear Filters</button>
+        <button type="button" class="apply-btn" id="download-btn">
+    ⬇ Download
+</button>
+
     </div>
 
     <!-- 📊 Summary Cards -->
@@ -390,6 +397,54 @@ window.onclick = e => {
         document.getElementById("commentModal").style.display = "none";
     }
 };
+</script>
+<script>
+document.getElementById("download-btn").addEventListener("click", function () {
+    const rows = document.querySelectorAll("table tbody tr");
+    let csv = [];
+    
+    // Table headers
+    const headers = [];
+    document.querySelectorAll("table thead th").forEach(th => {
+        headers.push(`"${th.innerText.trim()}"`);
+    });
+    csv.push(headers.join(","));
+
+    // Visible rows only (filtered ones)
+    rows.forEach(row => {
+        if (row.style.display === "none") return;
+        if (row.classList.contains("no-data-row")) return;
+
+        const cols = row.querySelectorAll("td");
+        if (cols.length === 0) return;
+
+        let rowData = [];
+        cols.forEach((col, index) => {
+            // Skip Action column
+            if (index === cols.length - 1) return;
+            rowData.push(`"${col.innerText.trim()}"`);
+        });
+
+        csv.push(rowData.join(","));
+    });
+
+    if (csv.length === 1) {
+        alert("No data available to download");
+        return;
+    }
+
+    // Create file
+    const blob = new Blob([csv.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+
+    const today = new Date().toISOString().split("T")[0];
+    link.download = `leave_requests_${today}.csv`;
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+});
 </script>
 
 {% endblock %}
